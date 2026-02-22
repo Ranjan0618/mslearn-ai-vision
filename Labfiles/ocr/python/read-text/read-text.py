@@ -6,6 +6,9 @@ from PIL import Image, ImageDraw
 from matplotlib import pyplot as plt
 
 # import namespaces
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.vision.imageanalysis import ImageAnalysisClient
+from azure.ai.vision.imageanalysis.models import VisualFeatures
 
 
 
@@ -27,15 +30,35 @@ def main():
 
 
         # Authenticate Azure AI Vision client
-
+        cv_client=ImageAnalysisClient(
+            endpoint=ai_endpoint,
+            credential=AzureKeyCredential(ai_key)
+        )   
         
         # Read text in image
-        
+        with open(image_file, "rb") as f:
+            image_data = f.read()   
+            print(f"Reading text in image: {image_file}...\n")
+            
+            result = cv_client.analyze(
+                image_data=image_data,
+                visual_features=[VisualFeatures.READ]
+            )
 
         # Print the text
+        print("Text detected in the image:")
+        if result.read is not None:
+            for line in result.read.blocks[0].lines:
+                print(line.text)
+        # Annotate the lines and words in the image
+        annotate_lines(image_file, result.read)
+        # Annotate the words in the image
+        print("\nAnnotating words in the image...")
+        for line in result.read.blocks[0].lines:
+            for word in line.words:
+                print(word.text)
+        annotate_words(image_file, result.read)
         
-
-
     except Exception as ex:
         print(ex)
 
